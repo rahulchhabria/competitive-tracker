@@ -215,7 +215,8 @@ app.post('/api/run-digest', async (req, res) => {
             runProgress.logs.push(`   No new content found`);
           }
         } catch (error) {
-          runProgress.logs.push(`   ❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const msg = error instanceof Error ? error.message : 'Unknown error';
+          runProgress.logs.push(`   ❌ Failed to fetch feed ${feedUrl}: ${msg}`);
         }
       }
     }
@@ -268,7 +269,7 @@ app.post('/api/run-digest', async (req, res) => {
     const generator = new DigestGenerator(storage, analyzer, currentCancellationToken);
     const digest = await generator.generateWeeklyDigest();
 
-    await storage.saveDigest(digest);
+    // Generator already saves the JSON; write the markdown report
     await storage.exportDigestToMarkdown(digest);
 
     const summary = await generator.generateDigestSummary(digest);

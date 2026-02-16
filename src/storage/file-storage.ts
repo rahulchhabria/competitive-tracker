@@ -258,7 +258,19 @@ export class FileStorage {
       }
     }
 
-    return md.join('\n');
+    const markdown = md.join('\n');
+
+    // Write the markdown file to disk
+    const dateStr = digest.weekStartDate.toISOString().split('T')[0];
+    const mdPath = path.join(
+      this.dataDir,
+      'digests',
+      'weekly',
+      `digest_${dateStr}.md`
+    );
+    await fs.writeFile(mdPath, markdown, 'utf-8');
+
+    return markdown;
   }
 
   private formatDigestEntry(entry: DigestEntry): string {
