@@ -93,9 +93,20 @@ export const CompetitorConfigSchema = z.object({
 });
 export type CompetitorConfig = z.infer<typeof CompetitorConfigSchema>;
 
+// Company profile schema
+export const CompanyProfileSchema = z.object({
+  name: z.string().min(1, 'Company name is required'),
+  description: z.string().optional(),
+  products: z.array(z.string()).optional(),
+  targetMarket: z.string().optional(),
+  differentiators: z.array(z.string()).optional(),
+});
+export type CompanyProfile = z.infer<typeof CompanyProfileSchema>;
+
 // System configuration
 export interface Config {
   competitors: CompetitorConfig[];
+  myCompany?: CompanyProfile;
   dataDir: string;
   model: string;
   temperature: number;

@@ -5,10 +5,23 @@ let editingIndex = null;
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkApiKey();
+    loadCompanyProfile();
     loadCompetitors();
     setupEventListeners();
     setupKeyboardShortcuts();
+    checkForRunningDigest();
+    initializeDatePickers();
 });
+
+// Initialize date pickers with defaults
+function initializeDatePickers() {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30); // Default to last 30 days
+
+    document.getElementById('endDate').valueAsDate = endDate;
+    document.getElementById('startDate').valueAsDate = startDate;
+}
 
 function setupEventListeners() {
     document.getElementById('addCompetitorBtn').addEventListener('click', openAddModal);
@@ -16,16 +29,27 @@ function setupEventListeners() {
     document.getElementById('runDigestBtn').addEventListener('click', runDigest);
     document.getElementById('cancelDigestBtn').addEventListener('click', cancelDigest);
 
-    // Close modal on backdrop click
+    // Company profile event listeners
+    document.getElementById('setupCompanyProfileBtn').addEventListener('click', openCompanyProfileModal);
+    document.getElementById('editCompanyProfileBtn').addEventListener('click', openEditCompanyProfileModal);
+    document.getElementById('companyProfileModalForm').addEventListener('submit', handleCompanyProfileSubmit);
+
+    // Close modals on backdrop click
     document.getElementById('competitorModal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeModal();
+    });
+    document.getElementById('companyProfileModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeCompanyModal();
     });
 }
 
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        // Escape to close modal
-        if (e.key === 'Escape') closeModal();
+        // Escape to close modals
+        if (e.key === 'Escape') {
+            closeModal();
+            closeCompanyModal();
+        }
     });
 }
 
@@ -50,6 +74,145 @@ async function checkApiKey() {
     }
 }
 
+// Company Profile Functions
+async function loadCompanyProfile() {
+    try {
+        const response = await fetch(`${API_BASE}/company-profile`);
+        const profile = await response.json();
+
+        if (profile) {
+            displayCompanyProfile(profile);
+        } else {
+            showCompanyProfileEmpty();
+        }
+    } catch (error) {
+        console.error('Failed to load company profile:', error);
+        showCompanyProfileEmpty();
+    }
+}
+
+function showCompanyProfileEmpty() {
+    document.getElementById('companyProfileEmpty').classList.remove('hidden');
+    document.getElementById('companyProfileDisplay').classList.add('hidden');
+    document.getElementById('editCompanyProfileBtn').classList.add('hidden');
+}
+
+function displayCompanyProfile(profile) {
+    document.getElementById('companyProfileEmpty').classList.add('hidden');
+    document.getElementById('companyProfileDisplay').classList.remove('hidden');
+    document.getElementById('editCompanyProfileBtn').classList.remove('hidden');
+
+    // Set company name
+    document.getElementById('profileName').textContent = profile.name;
+
+    // Set description
+    if (profile.description) {
+        document.getElementById('profileDescriptionField').classList.remove('hidden');
+        document.getElementById('profileDescription').textContent = profile.description;
+    } else {
+        document.getElementById('profileDescriptionField').classList.add('hidden');
+    }
+
+    // Set products
+    if (profile.products && profile.products.length > 0) {
+        document.getElementById('profileProductsField').classList.remove('hidden');
+        const productsContainer = document.getElementById('profileProducts');
+        productsContainer.innerHTML = profile.products.map(p => `<span class="tag">${p}</span>`).join('');
+    } else {
+        document.getElementById('profileProductsField').classList.add('hidden');
+    }
+
+    // Set target market
+    if (profile.targetMarket) {
+        document.getElementById('profileTargetMarketField').classList.remove('hidden');
+        document.getElementById('profileTargetMarket').textContent = profile.targetMarket;
+    } else {
+        document.getElementById('profileTargetMarketField').classList.add('hidden');
+    }
+
+    // Set differentiators
+    if (profile.differentiators && profile.differentiators.length > 0) {
+        document.getElementById('profileDifferentiatorsField').classList.remove('hidden');
+        const diffContainer = document.getElementById('profileDifferentiators');
+        diffContainer.innerHTML = profile.differentiators.map(d => `<span class="tag">${d}</span>`).join('');
+    } else {
+        document.getElementById('profileDifferentiatorsField').classList.add('hidden');
+    }
+}
+
+function openCompanyProfileModal() {
+    document.getElementById('companyModalTitle').textContent = 'Set Up Your Company';
+    document.getElementById('companyNameInput').value = '';
+    document.getElementById('companyDomainInput').value = '';
+    document.getElementById('companyProfileModal').classList.remove('hidden');
+}
+
+async function openEditCompanyProfileModal() {
+    try {
+        const response = await fetch(`${API_BASE}/company-profile`);
+        const profile = await response.json();
+
+        if (profile) {
+            document.getElementById('companyModalTitle').textContent = 'Edit Company Profile';
+            document.getElementById('companyNameInput').value = profile.name || '';
+            // For edit, we can extract domain from profile if we had it, or leave blank
+            document.getElementById('companyDomainInput').value = '';
+            document.getElementById('companyProfileModal').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Failed to load profile for editing:', error);
+        openCompanyProfileModal();
+    }
+}
+
+function closeCompanyModal() {
+    document.getElementById('companyProfileModal').classList.add('hidden');
+    document.getElementById('companyDiscoveryStatus').classList.add('hidden');
+}
+
+async function handleCompanyProfileSubmit(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('companyNameInput').value.trim();
+    const domain = document.getElementById('companyDomainInput').value.trim();
+
+    if (!name || !domain) {
+        alert('Both name and domain are required');
+        return;
+    }
+
+    // Show loading state
+    const submitBtn = document.getElementById('companySubmitBtn');
+    const statusDiv = document.getElementById('companyDiscoveryStatus');
+    submitBtn.disabled = true;
+    statusDiv.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`${API_BASE}/company-profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, domain })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to set up company profile');
+        }
+
+        const profile = await response.json();
+
+        // Close modal and display profile
+        closeCompanyModal();
+        displayCompanyProfile(profile);
+    } catch (error) {
+        console.error('Failed to set up company profile:', error);
+        alert('Failed to set up profile: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        statusDiv.classList.add('hidden');
+    }
+}
+
 // Competitors
 async function loadCompetitors() {
     try {
@@ -67,6 +230,10 @@ async function loadCompetitors() {
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </div>
                     <p>No competitors tracked yet. Add a company to start monitoring.</p>
+                    <button class="btn btn-primary btn-large" onclick="openAddModal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add Competitor
+                    </button>
                 </div>`;
             return;
         }
@@ -156,8 +323,15 @@ async function handleCompetitorSubmit(e) {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to add competitor');
+            const errorData = await response.json();
+
+            // Show detailed error for no feeds found
+            if (errorData.error === 'no_feeds_found') {
+                showNoFeedsError(errorData);
+            } else {
+                throw new Error(errorData.message || errorData.error || 'Failed to add competitor');
+            }
+            return;
         }
 
         closeModal();
@@ -177,8 +351,156 @@ function closeModal() {
     editingIndex = null;
 }
 
+function showNoFeedsError(errorData) {
+    // Reset form state
+    document.getElementById('discoveryStatus').classList.add('hidden');
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = 'Add Competitor';
+
+    // Build error message
+    let message = `⚠️ ${errorData.message}\n\n`;
+    message += `${errorData.suggestion}\n\n`;
+
+    errorData.options.forEach((option, i) => {
+        message += `${i + 1}. ${option}\n`;
+    });
+
+    if (errorData.details?.blogUrl) {
+        message += `\n\n📝 Found blog: ${errorData.details.blogUrl}`;
+        message += `\n   Try visiting this URL to look for an RSS/feed link.`;
+    }
+
+    message += `\n\n💡 Companies with RSS feeds: Sentry, Datadog, Linear, Notion, Asana`;
+
+    alert(message);
+}
+
 // Run Digest
 let logLineCount = 0;
+let currentPollInterval = null;
+
+// Check for running digest on page load
+async function checkForRunningDigest() {
+    try {
+        const response = await fetch(`${API_BASE}/run-digest/progress`);
+        const progress = await response.json();
+
+        if (progress.isRunning) {
+            // Resume showing the running digest
+            const runBtn = document.getElementById('runDigestBtn');
+            const cancelBtn = document.getElementById('cancelDigestBtn');
+            const progressSection = document.getElementById('progressSection');
+            const progressStatus = document.querySelector('.progress-status');
+
+            runBtn.disabled = true;
+            runBtn.classList.add('hidden');
+            cancelBtn.classList.remove('hidden');
+            cancelBtn.disabled = false;
+            progressSection.classList.remove('hidden');
+
+            // Show spinner and warning
+            const spinner = progressStatus.querySelector('.spinner-inline');
+            if (spinner) {
+                spinner.style.display = 'block';
+            }
+
+            const progressWarning = document.querySelector('.progress-warning');
+            if (progressWarning) {
+                progressWarning.style.display = 'flex';
+            }
+
+            // Start polling
+            startProgressPolling();
+        }
+    } catch (error) {
+        console.error('Failed to check for running digest:', error);
+    }
+}
+
+function startProgressPolling() {
+    const progressFill = document.getElementById('progressFill');
+    const progressMessage = document.getElementById('progressMessage');
+    const progressEstimate = document.getElementById('progressEstimate');
+    const progressLogs = document.getElementById('progressLogs');
+    const digestResult = document.getElementById('digestResult');
+    const runBtn = document.getElementById('runDigestBtn');
+    const cancelBtn = document.getElementById('cancelDigestBtn');
+    const progressStatus = document.querySelector('.progress-status');
+
+    currentPollInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`${API_BASE}/run-digest/progress`);
+            const progress = await response.json();
+
+            progressFill.style.width = `${progress.progress}%`;
+            progressMessage.textContent = progress.message;
+
+            // Update time estimates
+            if (progress.estimatedMinutesRemaining && progress.estimatedCompletionTime) {
+                progressEstimate.innerHTML = `
+                    <div class="time-remaining">~${progress.estimatedMinutesRemaining} min remaining</div>
+                    <div class="completion-time">Est. completion: ${progress.estimatedCompletionTime}</div>
+                `;
+            } else {
+                progressEstimate.innerHTML = '';
+            }
+
+            // Update logs with line numbers
+            if (progress.logs && progress.logs.length > 0) {
+                progressLogs.innerHTML = progress.logs
+                    .map((log, i) => `<div data-line="${i + 1}">${escapeHtml(log)}</div>`)
+                    .join('');
+                progressLogs.scrollTop = progressLogs.scrollHeight;
+            }
+
+            // Check if complete
+            if (!progress.isRunning) {
+                clearInterval(currentPollInterval);
+                currentPollInterval = null;
+                runBtn.disabled = false;
+                runBtn.classList.remove('hidden');
+                cancelBtn.classList.add('hidden');
+
+                // Hide spinner when complete
+                const spinner = progressStatus.querySelector('.spinner-inline');
+                if (spinner) {
+                    spinner.style.display = 'none';
+                }
+
+                // Hide warning when complete
+                const progressWarning = document.querySelector('.progress-warning');
+                if (progressWarning) {
+                    progressWarning.style.display = 'none';
+                }
+
+                // Clear time estimates
+                progressEstimate.innerHTML = '';
+
+                if (progress.stage === 'complete') {
+                    digestResult.classList.remove('hidden');
+
+                    // Use the digest date from the server (week start date)
+                    const digestDate = progress.digestDate || new Date().toISOString().split('T')[0];
+                    const digestLink = document.getElementById('digestLink');
+                    digestLink.href = `/api/digest/${digestDate}`;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to check progress:', error);
+            clearInterval(currentPollInterval);
+            currentPollInterval = null;
+            runBtn.disabled = false;
+            runBtn.classList.remove('hidden');
+            cancelBtn.classList.add('hidden');
+
+            // Hide spinner on error
+            const spinner = progressStatus.querySelector('.spinner-inline');
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+        }
+    }, 1000);
+}
 
 async function runDigest() {
     const runBtn = document.getElementById('runDigestBtn');
@@ -188,6 +510,7 @@ async function runDigest() {
     const progressMessage = document.getElementById('progressMessage');
     const progressLogs = document.getElementById('progressLogs');
     const digestResult = document.getElementById('digestResult');
+    const progressStatus = document.querySelector('.progress-status');
 
     logLineCount = 0;
     runBtn.disabled = true;
@@ -200,52 +523,31 @@ async function runDigest() {
     progressMessage.textContent = 'Starting...';
     progressLogs.innerHTML = '';
 
+    // Show spinner and warning
+    const spinner = progressStatus.querySelector('.spinner-inline');
+    if (spinner) {
+        spinner.style.display = 'block';
+    }
+
+    const progressWarning = document.querySelector('.progress-warning');
+    if (progressWarning) {
+        progressWarning.style.display = 'flex';
+    }
+
     try {
-        // Start the digest generation
+        // Get date range from inputs
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        // Start the digest generation with date range
         await fetch(`${API_BASE}/run-digest`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ startDate, endDate })
         });
 
-        // Poll for progress
-        const pollInterval = setInterval(async () => {
-            try {
-                const response = await fetch(`${API_BASE}/run-digest/progress`);
-                const progress = await response.json();
-
-                progressFill.style.width = `${progress.progress}%`;
-                progressMessage.textContent = progress.message;
-
-                // Update logs with line numbers
-                if (progress.logs && progress.logs.length > 0) {
-                    progressLogs.innerHTML = progress.logs
-                        .map((log, i) => `<div data-line="${i + 1}">${escapeHtml(log)}</div>`)
-                        .join('');
-                    progressLogs.scrollTop = progressLogs.scrollHeight;
-                }
-
-                // Check if complete
-                if (!progress.isRunning) {
-                    clearInterval(pollInterval);
-                    runBtn.disabled = false;
-                    runBtn.classList.remove('hidden');
-                    cancelBtn.classList.add('hidden');
-
-                    if (progress.stage === 'complete') {
-                        digestResult.classList.remove('hidden');
-
-                        const today = new Date().toISOString().split('T')[0];
-                        const digestLink = document.getElementById('digestLink');
-                        digestLink.href = `/api/digest/${today}`;
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to check progress:', error);
-                clearInterval(pollInterval);
-                runBtn.disabled = false;
-                runBtn.classList.remove('hidden');
-                cancelBtn.classList.add('hidden');
-            }
-        }, 1000);
+        // Start polling
+        startProgressPolling();
     } catch (error) {
         console.error('Failed to start digest generation:', error);
         runBtn.disabled = false;
@@ -257,7 +559,14 @@ async function runDigest() {
 
 // Cancel Digest
 async function cancelDigest() {
+    const runBtn = document.getElementById('runDigestBtn');
     const cancelBtn = document.getElementById('cancelDigestBtn');
+    const progressMessage = document.getElementById('progressMessage');
+    const progressLogs = document.getElementById('progressLogs');
+    const progressFill = document.getElementById('progressFill');
+    const progressEstimate = document.getElementById('progressEstimate');
+    const progressStatus = document.querySelector('.progress-status');
+    const progressSection = document.getElementById('progressSection');
 
     if (!confirm('Cancel the digest generation?')) {
         return;
@@ -265,13 +574,44 @@ async function cancelDigest() {
 
     try {
         cancelBtn.disabled = true;
+
+        // Call the cancel API
         const response = await fetch(`${API_BASE}/run-digest/cancel`, {
             method: 'POST'
         });
 
         if (response.ok) {
-            const data = await response.json();
-            console.log(data.message);
+            // Immediately stop polling
+            if (currentPollInterval) {
+                clearInterval(currentPollInterval);
+                currentPollInterval = null;
+            }
+
+            // Hide spinner
+            const spinner = progressStatus.querySelector('.spinner-inline');
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+
+            // Clear time estimates
+            progressEstimate.innerHTML = '';
+
+            // Update UI to show cancellation
+            progressMessage.textContent = 'Cancelled';
+            progressFill.style.width = '0%';
+
+            // Add cancellation message to logs
+            const currentLogs = progressLogs.innerHTML;
+            progressLogs.innerHTML = currentLogs + `<div data-line="${progressLogs.children.length + 1}">\n⚠️  Digest generation cancelled by user.</div>`;
+            progressLogs.scrollTop = progressLogs.scrollHeight;
+
+            // Reset buttons and hide progress after a moment
+            setTimeout(() => {
+                runBtn.disabled = false;
+                runBtn.classList.remove('hidden');
+                cancelBtn.classList.add('hidden');
+                progressSection.classList.add('hidden');
+            }, 1500);
         }
     } catch (error) {
         console.error('Failed to cancel digest generation:', error);

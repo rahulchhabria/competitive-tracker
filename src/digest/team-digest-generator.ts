@@ -184,8 +184,8 @@ Be specific and actionable. Frame all advice as recommendations for what Sentry 
     // Check for cancellation before expensive AI call
     this.cancellationToken?.throwIfCancelled();
 
-    const { text } = await this.analyzer['getModel']();
-    const response = await this.analyzer['getModel']().doGenerate({
+    const model = this.analyzer['getModel']();
+    const response = await model.doGenerate({
       inputFormat: 'prompt',
       mode: { type: 'regular' },
       prompt: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],

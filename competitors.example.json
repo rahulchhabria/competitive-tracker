@@ -1,4 +1,19 @@
 {
+  "myCompany": {
+    "name": "Acme Corp",
+    "description": "Modern project management platform for distributed teams",
+    "products": [
+      "Task Management",
+      "Time Tracking",
+      "Team Collaboration"
+    ],
+    "targetMarket": "Small to medium-sized tech companies and startups",
+    "differentiators": [
+      "Real-time collaboration",
+      "AI-powered insights",
+      "Simple pricing model"
+    ]
+  },
   "competitors": [
     {
       "name": "Notion",

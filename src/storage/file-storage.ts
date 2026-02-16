@@ -260,15 +260,18 @@ export class FileStorage {
 
     const markdown = md.join('\n');
 
-    // Write the markdown file to disk
+    // Write the markdown file to disk in an accessible location
     const dateStr = digest.weekStartDate.toISOString().split('T')[0];
-    const mdPath = path.join(
-      this.dataDir,
-      'digests',
-      'weekly',
-      `digest_${dateStr}.md`
-    );
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
+    const digestsDir = path.join(homeDir, 'Documents', 'Competitive Digests');
+
+    // Ensure the directory exists
+    await fs.mkdir(digestsDir, { recursive: true });
+
+    const mdPath = path.join(digestsDir, `digest_${dateStr}.md`);
     await fs.writeFile(mdPath, markdown, 'utf-8');
+
+    console.log(`✓ Digest saved to: ${mdPath}`);
 
     return markdown;
   }

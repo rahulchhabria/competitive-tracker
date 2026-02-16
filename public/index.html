@@ -14,11 +14,6 @@
     <!-- Top Navigation -->
     <nav class="navbar">
         <div class="navbar-brand">
-            <div class="navbar-logo">
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 2L18 17H2L10 2Z" fill="#ededed"/>
-                </svg>
-            </div>
             <span class="navbar-title">Competitive Tracker</span>
             <span class="navbar-separator"></span>
             <span class="navbar-context">Intelligence</span>
@@ -58,6 +53,46 @@
             <p>Track and monitor competitive intelligence across your market.</p>
         </div>
 
+        <!-- Company Profile Section -->
+        <section id="companyProfileSection" class="card">
+            <div class="card-header">
+                <h2>My Company</h2>
+                <button id="editCompanyProfileBtn" class="btn btn-secondary btn-small hidden">Edit</button>
+            </div>
+
+            <!-- Empty State -->
+            <div id="companyProfileEmpty" class="empty-state">
+                <div class="empty-state-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <p>Set up your company profile to get personalized competitive analysis.</p>
+                <button id="setupCompanyProfileBtn" class="btn btn-primary">Set Up Profile</button>
+            </div>
+
+            <!-- Display View -->
+            <div id="companyProfileDisplay" class="company-profile-display hidden">
+                <div class="profile-field profile-field-name">
+                    <div id="profileName" class="profile-value-name"></div>
+                </div>
+                <div id="profileDescriptionField" class="profile-field hidden">
+                    <div class="profile-label">Description</div>
+                    <div id="profileDescription" class="profile-value"></div>
+                </div>
+                <div id="profileProductsField" class="profile-field hidden">
+                    <div class="profile-label">Products</div>
+                    <div id="profileProducts" class="profile-tags"></div>
+                </div>
+                <div id="profileTargetMarketField" class="profile-field hidden">
+                    <div class="profile-label">Target Market</div>
+                    <div id="profileTargetMarket" class="profile-value"></div>
+                </div>
+                <div id="profileDifferentiatorsField" class="profile-field hidden">
+                    <div class="profile-label">Key Differentiators</div>
+                    <div id="profileDifferentiators" class="profile-tags"></div>
+                </div>
+            </div>
+        </section>
+
         <!-- Competitors Section -->
         <section class="card">
             <div class="card-header">
@@ -82,7 +117,21 @@
             </div>
 
             <div class="digest-controls">
-                <p>Fetch content, analyze with AI, and generate your weekly competitive digest.</p>
+                <div class="digest-options">
+                    <div>
+                        <p>Fetch content, analyze with AI, and generate your competitive digest.</p>
+                    </div>
+                    <div class="date-range-picker">
+                        <div class="date-input-group">
+                            <label for="startDate">From</label>
+                            <input type="date" id="startDate" class="date-input">
+                        </div>
+                        <div class="date-input-group">
+                            <label for="endDate">To</label>
+                            <input type="date" id="endDate" class="date-input">
+                        </div>
+                    </div>
+                </div>
                 <div class="digest-buttons">
                     <button id="cancelDigestBtn" class="btn btn-danger hidden">
                         Cancel
@@ -100,9 +149,18 @@
                         <div class="spinner-inline"></div>
                         <span id="progressMessage">Starting...</span>
                     </div>
+                    <div id="progressEstimate" class="progress-estimate"></div>
                 </div>
                 <div class="progress-bar">
                     <div id="progressFill" class="progress-fill"></div>
+                </div>
+
+                <div class="progress-warning">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L14.5 13H1.5L8 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.75" fill="currentColor"/></svg>
+                    <div>
+                        <strong>AI analysis in progress</strong>
+                        <span>This may take several minutes depending on content volume. Do not refresh or close this page.</span>
+                    </div>
                 </div>
 
                 <div id="progressLogs" class="logs"></div>
@@ -155,6 +213,42 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="submitBtn">Add Competitor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Company Profile Modal -->
+    <div id="companyProfileModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="companyModalTitle">Set Up Your Company</h3>
+                <button class="close-btn" onclick="closeCompanyModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <form id="companyProfileModalForm">
+                <div class="form-group">
+                    <label for="companyNameInput">Company Name</label>
+                    <input type="text" id="companyNameInput" name="name" required placeholder="Acme Corp">
+                    <small>Your company name</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="companyDomainInput">Domain</label>
+                    <input type="text" id="companyDomainInput" name="domain" required placeholder="acme.com">
+                    <small>We'll analyze your website to extract company info</small>
+                </div>
+
+                <div id="companyDiscoveryStatus" class="discovery-status hidden">
+                    <div class="spinner"></div>
+                    <span>Analyzing your website...</span>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCompanyModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="companySubmitBtn">Set Up Profile</button>
                 </div>
             </form>
         </div>
