@@ -58,7 +58,7 @@ export class RSSFetcher {
       return contents;
     } catch (error) {
       console.error(`Error fetching RSS feed ${feedUrl}:`, error);
-      return [];
+      throw error;
     }
   }
 

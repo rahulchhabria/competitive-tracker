@@ -1,24 +1,27 @@
 import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
-import { CompetitorContent, AnalysisResult, AnalysisResultSchema } from '../types/index.js';
+import { CompetitorContent, AnalysisResult, AnalysisResultSchema, CompanyProfile } from '../types/index.js';
 
 export interface AnalyzerConfig {
   model: string;
   temperature?: number;
   maxTokens?: number;
   apiKey?: string;
+  companyProfile?: CompanyProfile;
 }
 
 export class CompetitiveAnalyzer {
   private config: AnalyzerConfig;
+  private progressCallback?: (analyzed: number, total: number) => void;
 
-  constructor(config: AnalyzerConfig) {
+  constructor(config: AnalyzerConfig, progressCallback?: (analyzed: number, total: number) => void) {
     this.config = {
       temperature: 0.3,
       maxTokens: 4000,
       ...config
     };
+    this.progressCallback = progressCallback;
   }
 
   private getModel() {
@@ -90,8 +93,12 @@ export class CompetitiveAnalyzer {
 
     // Process in batches to avoid rate limits
     const batchSize = 5;
+    console.log(`Analyzing ${contents.length} items in batches of ${batchSize}...`);
+
     for (let i = 0; i < contents.length; i += batchSize) {
       const batch = contents.slice(i, i + batchSize);
+      console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(contents.length / batchSize)} (${batch.length} items)...`);
+
       const batchResults = await Promise.allSettled(
         batch.map(content => this.analyzeContent(content))
       );
@@ -99,9 +106,17 @@ export class CompetitiveAnalyzer {
       for (const result of batchResults) {
         if (result.status === 'fulfilled') {
           results.push(result.value);
+          console.log(`✓ Analysis successful`);
         } else {
-          console.error('Analysis failed:', result.reason);
+          console.error('✗ Analysis failed:', result.reason);
         }
+      }
+
+      console.log(`Batch complete. ${results.length}/${contents.length} analyzed so far.`);
+
+      // Report progress via callback
+      if (this.progressCallback) {
+        this.progressCallback(results.length, contents.length);
       }
 
       // Add delay between batches
@@ -110,11 +125,46 @@ export class CompetitiveAnalyzer {
       }
     }
 
+    console.log(`All analysis complete. ${results.length} successful out of ${contents.length} total.`);
     return results;
   }
 
+  private buildCompanyContext(): string {
+    if (!this.config.companyProfile) {
+      return '';
+    }
+
+    const profile = this.config.companyProfile;
+    const parts: string[] = [
+      `\n--- COMPANY CONTEXT ---`,
+      `You are analyzing from the perspective of: ${profile.name}`
+    ];
+
+    if (profile.description) {
+      parts.push(`\nCompany Overview: ${profile.description}`);
+    }
+
+    if (profile.products && profile.products.length > 0) {
+      parts.push(`\nOur Products: ${profile.products.join(', ')}`);
+    }
+
+    if (profile.targetMarket) {
+      parts.push(`\nTarget Market: ${profile.targetMarket}`);
+    }
+
+    if (profile.differentiators && profile.differentiators.length > 0) {
+      parts.push(`\nKey Differentiators: ${profile.differentiators.join(', ')}`);
+    }
+
+    parts.push(`\nWhen analyzing competitor content, consider how it specifically impacts ${profile.name}'s market position, products, and competitive advantages.\n---\n`);
+
+    return parts.join('\n');
+  }
+
   private getSystemPrompt(): string {
-    return `You are a competitive intelligence analyst specializing in analyzing competitor activities and market positioning.
+    const companyContext = this.buildCompanyContext();
+
+    return `You are a competitive intelligence analyst specializing in analyzing competitor activities and market positioning.${companyContext}
 
 Your role is to:
 1. Analyze competitor content (blog posts, release notes, press releases, etc.)
@@ -149,6 +199,10 @@ Product area mapping:
   }
 
   private buildAnalysisPrompt(content: CompetitorContent): string {
+    const companyReference = this.config.companyProfile
+      ? ` relative to ${this.config.companyProfile.name}`
+      : '';
+
     return `Analyze the following competitive content from ${content.competitor}:
 
 **Title:** ${content.title}
@@ -166,10 +220,10 @@ Provide a comprehensive competitive analysis with:
 2. Key insights and takeaways
 3. Any positioning or messaging changes detected
 4. New features or capabilities announced (with impact assessment)
-5. Threat level assessment (critical/high/medium/low)
+5. Threat level assessment${companyReference} (critical/high/medium/low)
 6. Product areas affected
-7. Competitive implications for our business
-8. Recommended strategic actions or responses`;
+7. Competitive implications${companyReference}
+8. Recommended strategic actions or responses${companyReference}`;
   }
 
   private truncateContent(content: string, maxLength: number): string {

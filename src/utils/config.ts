@@ -1,10 +1,12 @@
-import { Config, CompetitorConfig } from '../types/index.js';
+import { Config, CompetitorConfig, CompanyProfile } from '../types/index.js';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 export function loadConfig(): Config {
+  const { competitors, myCompany } = loadCompetitorsFile();
   return {
-    competitors: getCompetitors(),
+    competitors,
+    myCompany,
     dataDir: process.env.DATA_DIR || './data',
     model: process.env.DEFAULT_MODEL || 'anthropic:claude-sonnet-4-20250514',
     temperature: parseFloat(process.env.ANALYSIS_TEMPERATURE || '0.3'),
@@ -13,7 +15,7 @@ export function loadConfig(): Config {
   };
 }
 
-function getCompetitors(): CompetitorConfig[] {
+function loadCompetitorsFile(): { competitors: CompetitorConfig[]; myCompany?: CompanyProfile } {
   const competitorsPath = join(process.cwd(), 'competitors.json');
   const examplePath = join(process.cwd(), 'competitors.example.json');
 
@@ -29,7 +31,10 @@ function getCompetitors(): CompetitorConfig[] {
   try {
     const fileContent = readFileSync(filePath, 'utf-8');
     const data = JSON.parse(fileContent);
-    return data.competitors || [];
+    return {
+      competitors: data.competitors || [],
+      myCompany: data.myCompany || undefined,
+    };
   } catch (error) {
     console.error('Error loading competitors configuration:', error);
     throw new Error(`Failed to load competitors from ${filePath}`);
