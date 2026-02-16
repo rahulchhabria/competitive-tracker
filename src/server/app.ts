@@ -28,6 +28,7 @@ app.use(express.json());
 app.use(express.static(join(__dirname, '../../public')));
 
 const COMPETITORS_FILE = join(process.cwd(), 'competitors.json');
+const SETTINGS_FILE = join(process.cwd(), 'settings.json');
 
 interface CompetitorsData {
   competitors: CompetitorConfig[];
@@ -50,6 +51,27 @@ function loadCompetitors(): CompetitorsData {
 
 function saveCompetitors(data: CompetitorsData): void {
   writeFileSync(COMPETITORS_FILE, JSON.stringify(data, null, 2));
+}
+
+// Settings management
+interface Settings {
+  digestOutputDir?: string;
+}
+
+function loadSettings(): Settings {
+  if (!existsSync(SETTINGS_FILE)) {
+    return {};
+  }
+  try {
+    const content = readFileSync(SETTINGS_FILE, 'utf-8');
+    return JSON.parse(content);
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveSettings(settings: Settings): void {
+  writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 }
 
 // API Routes
@@ -229,6 +251,35 @@ app.delete('/api/company-profile', (req, res) => {
   }
 });
 
+// Settings endpoints
+
+// Get settings
+app.get('/api/settings', (req, res) => {
+  try {
+    const settings = loadSettings();
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load settings' });
+  }
+});
+
+// Update settings
+app.put('/api/settings', (req, res) => {
+  try {
+    const settings = req.body;
+    saveSettings(settings);
+
+    // If digest output dir changed, also update the environment variable
+    if (settings.digestOutputDir) {
+      process.env.DIGEST_OUTPUT_DIR = settings.digestOutputDir;
+    }
+
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
 // Check if API key is configured
 app.get('/api/config/check', (req, res) => {
   const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'your_anthropic_key_here';
@@ -252,7 +303,8 @@ let runProgress = {
   startTime: null as Date | null,
   estimatedMinutesRemaining: null as number | null,
   estimatedCompletionTime: null as string | null,
-  digestDate: null as string | null
+  digestDate: null as string | null,
+  filePath: null as string | null
 };
 
 function updateTimeEstimate(currentProgress: number) {
@@ -295,7 +347,8 @@ app.post('/api/run-digest', async (req, res) => {
     startTime,
     estimatedMinutesRemaining: null,
     estimatedCompletionTime: null,
-    digestDate: null
+    digestDate: null,
+    filePath: null
   };
 
   res.json({ message: 'Digest generation started' });
@@ -448,18 +501,20 @@ app.post('/api/run-digest', async (req, res) => {
     const digest = await generator.generateWeeklyDigest();
 
     // Generator already saves the JSON; write the markdown report
-    await storage.exportDigestToMarkdown(digest);
+    const { filePath } = await storage.exportDigestToMarkdown(digest);
 
     const summary = await generator.generateDigestSummary(digest);
 
-    // Store the digest date for the frontend to use
+    // Store the digest date and file path for the frontend to use
     runProgress.digestDate = digest.weekStartDate.toISOString().split('T')[0];
+    runProgress.filePath = filePath;
 
     runProgress.stage = 'complete';
     runProgress.message = 'Digest generated successfully!';
     runProgress.progress = 100;
     runProgress.logs.push('\n✨ Digest generation complete!');
     runProgress.logs.push(`\n${summary}`);
+    runProgress.logs.push(`\n📁 Saved to: ${filePath}`);
 
   } catch (error) {
     if (error instanceof CancellationError) {

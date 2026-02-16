@@ -203,7 +203,7 @@ export class FileStorage {
   }
 
   // Export digest to markdown
-  async exportDigestToMarkdown(digest: WeeklyDigest): Promise<string> {
+  async exportDigestToMarkdown(digest: WeeklyDigest): Promise<{ markdown: string; filePath: string }> {
     const md: string[] = [];
 
     md.push(`# Competitive Intelligence Digest`);
@@ -259,21 +259,34 @@ export class FileStorage {
     }
 
     const markdown = md.join('\n');
-
-    // Write the markdown file to disk in an accessible location
     const dateStr = digest.weekStartDate.toISOString().split('T')[0];
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '~';
-    const digestsDir = path.join(homeDir, 'Documents', 'Competitive Digests');
+
+    // Get digest output directory from environment variable or default to exports folder
+    let digestOutputDir = process.env.DIGEST_OUTPUT_DIR;
+
+    // Expand ~ to home directory
+    if (digestOutputDir?.startsWith('~/')) {
+      const homeDir = process.env.HOME || process.env.USERPROFILE;
+      digestOutputDir = path.join(homeDir!, digestOutputDir.substring(2));
+    } else if (!digestOutputDir) {
+      // Default to exports folder in repo root
+      digestOutputDir = path.join(process.cwd(), 'exports');
+    }
 
     // Ensure the directory exists
-    await fs.mkdir(digestsDir, { recursive: true });
+    await fs.mkdir(digestOutputDir, { recursive: true });
 
-    const mdPath = path.join(digestsDir, `digest_${dateStr}.md`);
-    await fs.writeFile(mdPath, markdown, 'utf-8');
+    const outputPath = path.join(digestOutputDir, `digest_${dateStr}.md`);
+    await fs.writeFile(outputPath, markdown, 'utf-8');
 
-    console.log(`✓ Digest saved to: ${mdPath}`);
+    // Also save to the data directory for internal use
+    const dataPath = path.join(this.dataDir, 'digests', 'weekly', `digest_${dateStr}.md`);
+    await fs.mkdir(path.dirname(dataPath), { recursive: true });
+    await fs.writeFile(dataPath, markdown, 'utf-8');
 
-    return markdown;
+    console.log(`✓ Digest saved to: ${outputPath}`);
+
+    return { markdown, filePath: outputPath };
   }
 
   private formatDigestEntry(entry: DigestEntry): string {

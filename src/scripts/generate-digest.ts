@@ -50,12 +50,8 @@ async function main() {
 
     // Export to markdown if requested
     if (exportMarkdown) {
-      const markdown = await storage.exportDigestToMarkdown(digest);
-      const dateStr = digest.weekStartDate.toISOString().split('T')[0];
-      const outputPath = path.join(config.dataDir, 'digests', 'weekly', `digest_${dateStr}.md`);
-
-      await fs.writeFile(outputPath, markdown, 'utf-8');
-      console.log(`\n📄 Markdown digest exported to: ${outputPath}`);
+      const { filePath } = await storage.exportDigestToMarkdown(digest);
+      console.log(`\n📄 Markdown digest exported to: ${filePath}`);
     }
 
     console.log('\n✨ Digest generation complete!');

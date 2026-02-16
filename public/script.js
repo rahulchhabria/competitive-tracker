@@ -5,6 +5,7 @@ let editingIndex = null;
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkApiKey();
+    loadSettings();
     loadCompanyProfile();
     loadCompetitors();
     setupEventListeners();
@@ -34,12 +35,19 @@ function setupEventListeners() {
     document.getElementById('editCompanyProfileBtn').addEventListener('click', openEditCompanyProfileModal);
     document.getElementById('companyProfileModalForm').addEventListener('submit', handleCompanyProfileSubmit);
 
+    // Settings event listeners
+    document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+    document.getElementById('settingsForm').addEventListener('submit', handleSettingsSubmit);
+
     // Close modals on backdrop click
     document.getElementById('competitorModal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeModal();
     });
     document.getElementById('companyProfileModal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closeCompanyModal();
+    });
+    document.getElementById('settingsModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeSettingsModal();
     });
 }
 
@@ -49,6 +57,7 @@ function setupKeyboardShortcuts() {
         if (e.key === 'Escape') {
             closeModal();
             closeCompanyModal();
+            closeSettingsModal();
         }
     });
 }
@@ -483,6 +492,14 @@ function startProgressPolling() {
                     const digestDate = progress.digestDate || new Date().toISOString().split('T')[0];
                     const digestLink = document.getElementById('digestLink');
                     digestLink.href = `/api/digest/${digestDate}`;
+
+                    // Display the file path
+                    const digestFilePath = document.getElementById('digestFilePath');
+                    // Use the file path from server, or construct it from the digest date
+                    const filePath = progress.filePath || `/Users/rahulchhabria/Documents/GitHub/competitive-tracker/exports/digest_${digestDate}.md`;
+                    digestFilePath.textContent = filePath;
+                    // Store the path globally for the copy function
+                    window.currentDigestPath = filePath;
                 }
             }
         } catch (error) {
@@ -624,4 +641,105 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Copy file path to clipboard
+function copyFilePath() {
+    let filePath = window.currentDigestPath;
+
+    // If no path from current session, try to construct from digest date
+    if (!filePath) {
+        const digestFilePath = document.getElementById('digestFilePath');
+        if (digestFilePath && digestFilePath.textContent) {
+            filePath = digestFilePath.textContent;
+        }
+    }
+
+    if (!filePath) {
+        alert('No file path available. Please generate a new digest to see the file location.');
+        return;
+    }
+
+    navigator.clipboard.writeText(filePath).then(() => {
+        const btn = document.getElementById('openFolderBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+        btn.classList.add('btn-success');
+
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy path:', err);
+        alert('Failed to copy path to clipboard');
+    });
+}
+
+// Settings Functions
+async function loadSettings() {
+    try {
+        const response = await fetch(`${API_BASE}/settings`);
+        const settings = await response.json();
+
+        // Show getting started banner if not dismissed
+        const banner = document.getElementById('gettingStartedBanner');
+        const dismissed = localStorage.getItem('gettingStartedDismissed');
+        if (!dismissed) {
+            banner.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+}
+
+async function openSettingsModal() {
+    try {
+        const response = await fetch(`${API_BASE}/settings`);
+        const settings = await response.json();
+
+        document.getElementById('digestOutputDir').value = settings.digestOutputDir || '~/Documents/Competitive Digests';
+
+        document.getElementById('settingsModal').classList.remove('hidden');
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+        document.getElementById('settingsModal').classList.remove('hidden');
+    }
+}
+
+function closeSettingsModal() {
+    document.getElementById('settingsModal').classList.add('hidden');
+}
+
+async function handleSettingsSubmit(e) {
+    e.preventDefault();
+
+    const settings = {
+        digestOutputDir: document.getElementById('digestOutputDir').value.trim()
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save settings');
+        }
+
+        closeSettingsModal();
+        alert('Settings saved successfully!');
+    } catch (error) {
+        console.error('Failed to save settings:', error);
+        alert('Failed to save settings: ' + error.message);
+    }
+}
+
+function dismissGettingStarted() {
+    const banner = document.getElementById('gettingStartedBanner');
+    banner.classList.add('hidden');
+    // Save to localStorage so it stays dismissed
+    localStorage.setItem('gettingStartedDismissed', 'true');
 }

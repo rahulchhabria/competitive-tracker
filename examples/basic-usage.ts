@@ -118,13 +118,9 @@ async function main() {
   console.log('');
 
   // Export to markdown
-  const markdown = await storage.exportDigestToMarkdown(digest);
-  const outputPath = './data/digests/latest-digest.md';
+  const { filePath } = await storage.exportDigestToMarkdown(digest);
 
-  const { writeFile } = await import('fs/promises');
-  await writeFile(outputPath, markdown, 'utf-8');
-
-  console.log(`\n📄 Markdown digest saved to: ${outputPath}`);
+  console.log(`\n📄 Markdown digest saved to: ${filePath}`);
   console.log('\n✨ Example complete!');
 }
 

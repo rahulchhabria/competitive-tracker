@@ -19,12 +19,33 @@
             <span class="navbar-context">Intelligence</span>
         </div>
         <div class="navbar-actions">
+            <button id="settingsBtn" class="btn btn-secondary btn-small" title="Settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m5.2-15.8l-4.2 4.2m-2 2l-4.2 4.2m15.8-5.2l-6 .001m-6-.001l-6-.001m15.8 5.2l-4.2-4.2m-2-2l-4.2-4.2"/></svg>
+                Settings
+            </button>
             <button id="addCompetitorBtn" class="btn btn-primary btn-small">Add Competitor</button>
         </div>
     </nav>
 
     <!-- Page Content -->
     <main class="page">
+
+        <!-- Getting Started Banner -->
+        <div id="gettingStartedBanner" class="info-banner hidden">
+            <div class="info-banner-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </div>
+            <div class="info-banner-content">
+                <strong>Getting Started</strong>
+                <ol>
+                    <li>Add your API key to <code>.env</code> file (ANTHROPIC_API_KEY or OPENAI_API_KEY)</li>
+                    <li>Set up your company profile below</li>
+                    <li>Add competitors to track</li>
+                    <li>Configure digest output folder in Settings</li>
+                </ol>
+            </div>
+            <button class="info-banner-close" onclick="dismissGettingStarted()">×</button>
+        </div>
 
         <!-- API Key Warning -->
         <div id="apiKeyWarning" class="warning hidden">
@@ -171,10 +192,20 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
                         <h3>Digest generated successfully</h3>
-                        <a id="digestLink" href="#" target="_blank" class="btn btn-primary">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                            Open Report
-                        </a>
+                        <div class="file-path-display">
+                            <p><strong>Saved to:</strong></p>
+                            <code id="digestFilePath" class="file-path"></code>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 16px;">
+                            <a id="digestLink" href="#" target="_blank" class="btn btn-primary">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                View in Browser
+                            </a>
+                            <button id="openFolderBtn" class="btn btn-secondary" onclick="copyFilePath()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Copy Path
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -249,6 +280,31 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeCompanyModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="companySubmitBtn">Set Up Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="close-btn" onclick="closeSettingsModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="digestOutputDir">Digest Output Directory</label>
+                    <input type="text" id="digestOutputDir" name="digestOutputDir" placeholder="~/Documents/Competitive Digests">
+                    <small>Where digest markdown files will be saved. Supports ~ for home directory.</small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
                 </div>
             </form>
         </div>
