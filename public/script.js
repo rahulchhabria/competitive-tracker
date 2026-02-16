@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkApiKey();
     loadCompetitors();
     setupEventListeners();
+    setupKeyboardShortcuts();
 });
 
 function setupEventListeners() {
@@ -14,6 +15,18 @@ function setupEventListeners() {
     document.getElementById('competitorForm').addEventListener('submit', handleCompetitorSubmit);
     document.getElementById('runDigestBtn').addEventListener('click', runDigest);
     document.getElementById('cancelDigestBtn').addEventListener('click', cancelDigest);
+
+    // Close modal on backdrop click
+    document.getElementById('competitorModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+}
+
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Escape to close modal
+        if (e.key === 'Escape') closeModal();
+    });
 }
 
 // API Key Check
@@ -44,32 +57,54 @@ async function loadCompetitors() {
         const competitors = await response.json();
 
         const list = document.getElementById('competitorsList');
+        const countEl = document.getElementById('competitorCount');
 
         if (competitors.length === 0) {
-            list.innerHTML = '<div class="empty-state"><p>No competitors added yet. Click "Add Competitor" to get started!</p></div>';
+            countEl.textContent = '';
+            list.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <p>No competitors tracked yet. Add a company to start monitoring.</p>
+                </div>`;
             return;
         }
 
-        list.innerHTML = competitors.map((comp, index) => `
+        countEl.textContent = `${competitors.length} ${competitors.length === 1 ? 'company' : 'companies'}`;
+
+        list.innerHTML = competitors.map((comp, index) => {
+            const initial = comp.name.charAt(0).toUpperCase();
+            const feedCount = comp.feedUrls.length;
+            const hasBlog = comp.blogUrl ? true : false;
+
+            return `
             <div class="competitor-item">
                 <div class="competitor-info">
-                    <div class="competitor-name">
-                        ${comp.name}
-                        <span class="competitor-status ${comp.enabled ? 'enabled' : 'disabled'}">
-                            ${comp.enabled ? 'Enabled' : 'Disabled'}
-                        </span>
+                    <div class="competitor-avatar">${escapeHtml(initial)}</div>
+                    <div class="competitor-details">
+                        <div class="competitor-name">
+                            ${escapeHtml(comp.name)}
+                            <span class="badge ${comp.enabled ? 'badge-success' : 'badge-error'}">
+                                <span class="badge-dot"></span>
+                                ${comp.enabled ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <div class="competitor-meta">
+                            <span>${escapeHtml(comp.websiteUrl)}</span>
+                            <span class="dot"></span>
+                            <span>${feedCount} feed${feedCount !== 1 ? 's' : ''}</span>
+                            ${hasBlog ? '<span class="dot"></span><span>Blog</span>' : ''}
+                        </div>
                     </div>
-                    <div class="competitor-url">${comp.websiteUrl}</div>
-                    <div class="competitor-feeds">${comp.feedUrls.length} RSS feed(s) • Blog: ${comp.blogUrl ? 'Yes' : 'No'}</div>
                 </div>
                 <div class="competitor-actions">
-                    <button class="btn btn-danger btn-small" onclick="deleteCompetitor(${index})">Delete</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteCompetitor(${index})">Remove</button>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     } catch (error) {
         console.error('Failed to load competitors:', error);
-        alert('Failed to load competitors');
     }
 }
 
@@ -79,10 +114,13 @@ function openAddModal() {
     document.getElementById('discoveryStatus').classList.add('hidden');
     document.getElementById('submitBtn').disabled = false;
     document.getElementById('competitorModal').classList.remove('hidden');
+
+    // Focus the first input
+    setTimeout(() => document.getElementById('name').focus(), 100);
 }
 
 async function deleteCompetitor(index) {
-    if (!confirm('Are you sure you want to delete this competitor?')) {
+    if (!confirm('Remove this competitor? This action cannot be undone.')) {
         return;
     }
 
@@ -93,7 +131,6 @@ async function deleteCompetitor(index) {
         loadCompetitors();
     } catch (error) {
         console.error('Failed to delete competitor:', error);
-        alert('Failed to delete competitor');
     }
 }
 
@@ -109,6 +146,7 @@ async function handleCompetitorSubmit(e) {
     const submitBtn = document.getElementById('submitBtn');
     discoveryStatus.classList.remove('hidden');
     submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
 
     try {
         const response = await fetch(`${API_BASE}/competitors`, {
@@ -129,15 +167,19 @@ async function handleCompetitorSubmit(e) {
         alert(error.message || 'Failed to add competitor. Please check the domain and try again.');
         discoveryStatus.classList.add('hidden');
         submitBtn.disabled = false;
+        submitBtn.textContent = 'Add Competitor';
     }
 }
 
 function closeModal() {
     document.getElementById('competitorModal').classList.add('hidden');
+    document.getElementById('submitBtn').textContent = 'Add Competitor';
     editingIndex = null;
 }
 
 // Run Digest
+let logLineCount = 0;
+
 async function runDigest() {
     const runBtn = document.getElementById('runDigestBtn');
     const cancelBtn = document.getElementById('cancelDigestBtn');
@@ -147,6 +189,7 @@ async function runDigest() {
     const progressLogs = document.getElementById('progressLogs');
     const digestResult = document.getElementById('digestResult');
 
+    logLineCount = 0;
     runBtn.disabled = true;
     runBtn.classList.add('hidden');
     cancelBtn.classList.remove('hidden');
@@ -172,10 +215,10 @@ async function runDigest() {
                 progressFill.style.width = `${progress.progress}%`;
                 progressMessage.textContent = progress.message;
 
-                // Update logs
+                // Update logs with line numbers
                 if (progress.logs && progress.logs.length > 0) {
                     progressLogs.innerHTML = progress.logs
-                        .map(log => `<div>${escapeHtml(log)}</div>`)
+                        .map((log, i) => `<div data-line="${i + 1}">${escapeHtml(log)}</div>`)
                         .join('');
                     progressLogs.scrollTop = progressLogs.scrollHeight;
                 }
@@ -188,10 +231,8 @@ async function runDigest() {
                     cancelBtn.classList.add('hidden');
 
                     if (progress.stage === 'complete') {
-                        // Show success message with link to markdown file
                         digestResult.classList.remove('hidden');
 
-                        // Get the latest digest date from the logs
                         const today = new Date().toISOString().split('T')[0];
                         const digestLink = document.getElementById('digestLink');
                         digestLink.href = `/api/digest/${today}`;
@@ -207,7 +248,6 @@ async function runDigest() {
         }, 1000);
     } catch (error) {
         console.error('Failed to start digest generation:', error);
-        alert('Failed to start digest generation');
         runBtn.disabled = false;
         runBtn.classList.remove('hidden');
         cancelBtn.classList.add('hidden');
@@ -219,7 +259,7 @@ async function runDigest() {
 async function cancelDigest() {
     const cancelBtn = document.getElementById('cancelDigestBtn');
 
-    if (!confirm('Are you sure you want to cancel the digest generation?')) {
+    if (!confirm('Cancel the digest generation?')) {
         return;
     }
 
@@ -235,7 +275,6 @@ async function cancelDigest() {
         }
     } catch (error) {
         console.error('Failed to cancel digest generation:', error);
-        alert('Failed to cancel digest generation');
         cancelBtn.disabled = false;
     }
 }

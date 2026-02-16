@@ -6,42 +6,71 @@
     <title>Competitive Tracker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🏆 Competitive Tracker</h1>
-            <p class="subtitle">AI-powered competitive intelligence monitoring</p>
-        </header>
 
-        <!-- API Key Check -->
+    <!-- Top Navigation -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <div class="navbar-logo">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 2L18 17H2L10 2Z" fill="#ededed"/>
+                </svg>
+            </div>
+            <span class="navbar-title">Competitive Tracker</span>
+            <span class="navbar-separator"></span>
+            <span class="navbar-context">Intelligence</span>
+        </div>
+        <div class="navbar-actions">
+            <button id="addCompetitorBtn" class="btn btn-primary btn-small">Add Competitor</button>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <main class="page">
+
+        <!-- API Key Warning -->
         <div id="apiKeyWarning" class="warning hidden">
-            <strong>⚠️ No API Key Configured</strong>
-            <p>Please add your Anthropic or OpenAI API key to the <code>.env</code> file to use this tool.</p>
-            <details>
-                <summary>How to add your API key</summary>
-                <ol>
-                    <li>Open the <code>.env</code> file in the project root</li>
-                    <li>Add your API key:
-                        <pre>ANTHROPIC_API_KEY=your_key_here</pre>
-                    </li>
-                    <li>Save the file and restart the server</li>
-                </ol>
-            </details>
+            <div class="warning-icon">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L14.5 13H1.5L8 1.5Z" stroke="#f5a623" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6v3" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r="0.75" fill="#f5a623"/></svg>
+            </div>
+            <div class="warning-content">
+                <strong>No API Key Configured</strong>
+                <p>Add your Anthropic or OpenAI API key to the <code>.env</code> file to use this tool.</p>
+                <details>
+                    <summary>Setup instructions</summary>
+                    <ol>
+                        <li>Open the <code>.env</code> file in the project root</li>
+                        <li>Add your API key:
+                            <pre>ANTHROPIC_API_KEY=your_key_here</pre>
+                        </li>
+                        <li>Save the file and restart the server</li>
+                    </ol>
+                </details>
+            </div>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>Competitors</h1>
+            <p>Track and monitor competitive intelligence across your market.</p>
         </div>
 
         <!-- Competitors Section -->
         <section class="card">
             <div class="card-header">
-                <h2>📋 Competitors</h2>
-                <button id="addCompetitorBtn" class="btn btn-primary">+ Add Competitor</button>
+                <h2>Tracked Companies</h2>
+                <span id="competitorCount" style="font-size: 12px; color: var(--text-tertiary);"></span>
             </div>
 
             <div id="competitorsList" class="competitors-list">
                 <div class="empty-state">
-                    <p>No competitors added yet. Click "Add Competitor" to get started!</p>
+                    <div class="empty-state-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <p>No competitors tracked yet. Add a company to start monitoring.</p>
                 </div>
             </div>
         </section>
@@ -49,67 +78,78 @@
         <!-- Generate Digest Section -->
         <section class="card">
             <div class="card-header">
-                <h2>🚀 Generate Digest</h2>
+                <h2>Generate Digest</h2>
             </div>
 
             <div class="digest-controls">
-                <p>Run the full pipeline to fetch content, analyze with AI, and generate your competitive digest.</p>
+                <p>Fetch content, analyze with AI, and generate your weekly competitive digest.</p>
                 <div class="digest-buttons">
-                    <button id="runDigestBtn" class="btn btn-success btn-large" disabled>
-                        Generate Digest
-                    </button>
-                    <button id="cancelDigestBtn" class="btn btn-danger btn-large hidden">
+                    <button id="cancelDigestBtn" class="btn btn-danger hidden">
                         Cancel
+                    </button>
+                    <button id="runDigestBtn" class="btn btn-success btn-large" disabled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Generate
                     </button>
                 </div>
             </div>
 
             <div id="progressSection" class="progress-section hidden">
+                <div class="progress-header">
+                    <div class="progress-status">
+                        <div class="spinner-inline"></div>
+                        <span id="progressMessage">Starting...</span>
+                    </div>
+                </div>
                 <div class="progress-bar">
                     <div id="progressFill" class="progress-fill"></div>
                 </div>
-                <p id="progressMessage" class="progress-message"></p>
 
                 <div id="progressLogs" class="logs"></div>
 
                 <div id="digestResult" class="digest-result hidden">
                     <div class="success-message">
-                        <span class="success-icon">✅</span>
-                        <h3>Digest Generated Successfully!</h3>
+                        <div class="success-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <h3>Digest generated successfully</h3>
                         <a id="digestLink" href="#" target="_blank" class="btn btn-primary">
-                            📄 Open Digest Report
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                            Open Report
                         </a>
                     </div>
                 </div>
             </div>
         </section>
 
-    </div>
+    </main>
 
     <!-- Add Competitor Modal -->
     <div id="competitorModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalTitle">Add Competitor</h3>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
+                <button class="close-btn" onclick="closeModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
 
             <form id="competitorForm">
                 <div class="form-group">
-                    <label for="name">Company Name *</label>
-                    <input type="text" id="name" name="name" required placeholder="e.g., Notion">
+                    <label for="name">Company Name</label>
+                    <input type="text" id="name" name="name" required placeholder="Notion">
                     <small>The name of the company you want to track</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="domain">Company Domain *</label>
-                    <input type="text" id="domain" name="domain" required placeholder="e.g., notion.so">
-                    <small>Just the domain (we'll find the blog and RSS feeds automatically)</small>
+                    <label for="domain">Domain</label>
+                    <input type="text" id="domain" name="domain" required placeholder="notion.so">
+                    <small>We'll automatically discover RSS feeds and blog URLs</small>
                 </div>
 
                 <div id="discoveryStatus" class="discovery-status hidden">
                     <div class="spinner"></div>
-                    <p>Discovering RSS feeds and blog URLs...</p>
+                    <span>Discovering feeds...</span>
                 </div>
 
                 <div class="modal-actions">
