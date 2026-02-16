@@ -42,6 +42,20 @@ export class FeedDiscovery {
     '/whats-new'
   ];
 
+  private commonSubdomains = [
+    'blog',
+    'news',
+    'press',
+    'about',
+    'developer',
+    'developers',
+    'devblog',
+    'engineering',
+    'updates',
+    'changelog',
+    'releases'
+  ];
+
   async discoverFeeds(domain: string): Promise<DiscoveryResult> {
     // Clean and normalize domain
     domain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -81,7 +95,16 @@ export class FeedDiscovery {
         result.feedUrls.push(...changelogFeeds);
       }
 
-      // 7. Deduplicate feed URLs
+      // 7. Check common subdomains (blog.domain.com, press.domain.com, etc.)
+      const subdomainFeeds = await this.checkCommonSubdomains(domain);
+      result.feedUrls.push(...subdomainFeeds.feeds);
+
+      // Update blogUrl if we found one on a subdomain
+      if (!result.blogUrl && subdomainFeeds.blogUrl) {
+        result.blogUrl = subdomainFeeds.blogUrl;
+      }
+
+      // 8. Deduplicate feed URLs
       result.feedUrls = [...new Set(result.feedUrls)];
 
     } catch (error) {
@@ -335,5 +358,80 @@ export class FeedDiscovery {
 
     // Otherwise, it's relative - join with base
     return `${baseUrl}/${url}`;
+  }
+
+  private async checkCommonSubdomains(domain: string): Promise<{ feeds: string[]; blogUrl?: string }> {
+    const feeds: string[] = [];
+    let blogUrl: string | undefined;
+
+    // Extract root domain (handle www. prefix)
+    const rootDomain = domain.replace(/^www\./, '');
+
+    // Try each common subdomain
+    for (const subdomain of this.commonSubdomains) {
+      const subdomainUrl = `https://${subdomain}.${rootDomain}`;
+
+      try {
+        // First check if subdomain exists
+        const response = await axios.head(subdomainUrl, {
+          timeout: 5000,
+          maxRedirects: 5,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; CompetitiveTracker/1.0)'
+          }
+        });
+
+        if (response.status === 200) {
+          console.log(`✓ Found subdomain: ${subdomainUrl}`);
+
+          // Subdomain exists! Try to find feeds
+          // 1. Check for RSS links in the HTML
+          const html = await this.fetchPage(subdomainUrl);
+          const htmlFeeds = this.findFeedsInHtml(html, subdomainUrl);
+          feeds.push(...htmlFeeds);
+
+          // 2. Try common feed paths
+          const feedPaths = ['/feed', '/rss', '/feed.xml', '/rss.xml', '/blog/feed', '/blogs/feed'];
+          for (const path of feedPaths) {
+            const feedUrl = `${subdomainUrl}${path}`;
+            try {
+              const feedResponse = await axios.head(feedUrl, { timeout: 3000 });
+              if (feedResponse.status === 200) {
+                const contentType = feedResponse.headers['content-type'] || '';
+                if (contentType.includes('xml') || contentType.includes('rss') || contentType.includes('atom')) {
+                  feeds.push(feedUrl);
+                  console.log(`  ✓ Found feed: ${feedUrl}`);
+                }
+              }
+            } catch (error) {
+              // Feed doesn't exist, continue
+            }
+          }
+
+          // If this is a blog subdomain and we found feeds, set it as blogUrl
+          if (subdomain === 'blog' && feeds.length > 0 && !blogUrl) {
+            blogUrl = subdomainUrl;
+          }
+        }
+      } catch (error) {
+        // Subdomain doesn't exist or is inaccessible, continue
+      }
+    }
+
+    // Special case for Amazon: check aws.amazon.com
+    if (rootDomain === 'amazon.com') {
+      const awsUrl = 'https://aws.amazon.com/blogs/aws/feed/';
+      try {
+        const response = await axios.head(awsUrl, { timeout: 5000 });
+        if (response.status === 200) {
+          feeds.push(awsUrl);
+          console.log(`✓ Found AWS feed: ${awsUrl}`);
+        }
+      } catch (error) {
+        // Skip
+      }
+    }
+
+    return { feeds, blogUrl };
   }
 }

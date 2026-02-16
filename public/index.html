@@ -23,7 +23,6 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m5.2-15.8l-4.2 4.2m-2 2l-4.2 4.2m15.8-5.2l-6 .001m-6-.001l-6-.001m15.8 5.2l-4.2-4.2m-2-2l-4.2-4.2"/></svg>
                 Settings
             </button>
-            <button id="addCompetitorBtn" class="btn btn-primary btn-small">Add Competitor</button>
         </div>
     </nav>
 
@@ -118,7 +117,7 @@
         <section class="card">
             <div class="card-header">
                 <h2>Tracked Companies</h2>
-                <span id="competitorCount" style="font-size: 12px; color: var(--text-tertiary);"></span>
+                <button id="addCompetitorBtn" class="btn btn-primary btn-small">Add Competitor</button>
             </div>
 
             <div id="competitorsList" class="competitors-list">
@@ -226,13 +225,13 @@
             <form id="competitorForm">
                 <div class="form-group">
                     <label for="name">Company Name</label>
-                    <input type="text" id="name" name="name" required placeholder="Notion">
+                    <input type="text" id="name" name="name" required>
                     <small>The name of the company you want to track</small>
                 </div>
 
                 <div class="form-group">
                     <label for="domain">Domain</label>
-                    <input type="text" id="domain" name="domain" required placeholder="notion.so">
+                    <input type="text" id="domain" name="domain" required>
                     <small>We'll automatically discover RSS feeds and blog URLs</small>
                 </div>
 
@@ -262,13 +261,13 @@
             <form id="companyProfileModalForm">
                 <div class="form-group">
                     <label for="companyNameInput">Company Name</label>
-                    <input type="text" id="companyNameInput" name="name" required placeholder="Acme Corp">
+                    <input type="text" id="companyNameInput" name="name" required>
                     <small>Your company name</small>
                 </div>
 
                 <div class="form-group">
                     <label for="companyDomainInput">Domain</label>
-                    <input type="text" id="companyDomainInput" name="domain" required placeholder="acme.com">
+                    <input type="text" id="companyDomainInput" name="domain" required>
                     <small>We'll analyze your website to extract company info</small>
                 </div>
 
@@ -298,7 +297,7 @@
             <form id="settingsForm">
                 <div class="form-group">
                     <label for="digestOutputDir">Digest Output Directory</label>
-                    <input type="text" id="digestOutputDir" name="digestOutputDir" placeholder="~/Documents/Competitive Digests">
+                    <input type="text" id="digestOutputDir" name="digestOutputDir">
                     <small>Where digest markdown files will be saved. Supports ~ for home directory.</small>
                 </div>
 
