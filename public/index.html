@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competitive Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 Competitive Tracker</h1>
+            <p class="subtitle">AI-powered competitive intelligence monitoring</p>
+        </header>
+
+        <!-- API Key Check -->
+        <div id="apiKeyWarning" class="warning hidden">
+            <strong>⚠️ No API Key Configured</strong>
+            <p>Please add your Anthropic or OpenAI API key to the <code>.env</code> file to use this tool.</p>
+            <details>
+                <summary>How to add your API key</summary>
+                <ol>
+                    <li>Open the <code>.env</code> file in the project root</li>
+                    <li>Add your API key:
+                        <pre>ANTHROPIC_API_KEY=your_key_here</pre>
+                    </li>
+                    <li>Save the file and restart the server</li>
+                </ol>
+            </details>
+        </div>
+
+        <!-- Competitors Section -->
+        <section class="card">
+            <div class="card-header">
+                <h2>📋 Competitors</h2>
+                <button id="addCompetitorBtn" class="btn btn-primary">+ Add Competitor</button>
+            </div>
+
+            <div id="competitorsList" class="competitors-list">
+                <div class="empty-state">
+                    <p>No competitors added yet. Click "Add Competitor" to get started!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Generate Digest Section -->
+        <section class="card">
+            <div class="card-header">
+                <h2>🚀 Generate Digest</h2>
+            </div>
+
+            <div class="digest-controls">
+                <p>Run the full pipeline to fetch content, analyze with AI, and generate your competitive digest.</p>
+                <div class="digest-buttons">
+                    <button id="runDigestBtn" class="btn btn-success btn-large" disabled>
+                        Generate Digest
+                    </button>
+                    <button id="cancelDigestBtn" class="btn btn-danger btn-large hidden">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <div id="progressSection" class="progress-section hidden">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <p id="progressMessage" class="progress-message"></p>
+
+                <div id="progressLogs" class="logs"></div>
+
+                <div id="digestResult" class="digest-result hidden">
+                    <div class="success-message">
+                        <span class="success-icon">✅</span>
+                        <h3>Digest Generated Successfully!</h3>
+                        <a id="digestLink" href="#" target="_blank" class="btn btn-primary">
+                            📄 Open Digest Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Add Competitor Modal -->
+    <div id="competitorModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add Competitor</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <form id="competitorForm">
+                <div class="form-group">
+                    <label for="name">Company Name *</label>
+                    <input type="text" id="name" name="name" required placeholder="e.g., Notion">
+                    <small>The name of the company you want to track</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="domain">Company Domain *</label>
+                    <input type="text" id="domain" name="domain" required placeholder="e.g., notion.so">
+                    <small>Just the domain (we'll find the blog and RSS feeds automatically)</small>
+                </div>
+
+                <div id="discoveryStatus" class="discovery-status hidden">
+                    <div class="spinner"></div>
+                    <p>Discovering RSS feeds and blog URLs...</p>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Add Competitor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "competitors": [
+    {
+      "name": "Notion",
+      "feedUrls": [
+        "https://www.notion.so/blog/rss"
+      ],
+      "blogUrl": "https://www.notion.so/blog",
+      "releaseNotesUrl": "https://www.notion.so/releases",
+      "websiteUrl": "https://www.notion.so",
+      "enabled": true
+    },
+    {
+      "name": "Linear",
+      "feedUrls": [
+        "https://linear.app/blog/rss"
+      ],
+      "blogUrl": "https://linear.app/blog",
+      "releaseNotesUrl": "https://linear.app/changelog",
+      "websiteUrl": "https://linear.app",
+      "enabled": true
+    },
+    {
+      "name": "Asana",
+      "feedUrls": [
+        "https://blog.asana.com/feed/"
+      ],
+      "blogUrl": "https://blog.asana.com",
+      "websiteUrl": "https://asana.com",
+      "enabled": true
+    },
+    {
+      "name": "Monday.com",
+      "feedUrls": [
+        "https://monday.com/blog/feed/"
+      ],
+      "blogUrl": "https://monday.com/blog",
+      "websiteUrl": "https://monday.com",
+      "enabled": true
+    },
+    {
+      "name": "Airtable",
+      "feedUrls": [
+        "https://blog.airtable.com/feed/"
+      ],
+      "blogUrl": "https://blog.airtable.com",
+      "websiteUrl": "https://airtable.com",
+      "enabled": true
+    }
+  ]
+}
