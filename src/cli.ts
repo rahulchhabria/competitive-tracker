@@ -738,11 +738,29 @@ async function viewDigests(): Promise<void> {
 
 // --- Main Menu ---
 
+function showSplash(): void {
+  const splash = `
+\x1b[36m   ___                      _   _ _   _
+  / __\\___  _ __ ___  _ __ | |_(_) |_(_)_   _____
+ / /  / _ \\| '_ \` _ \\| '_ \\| __| | __| \\ \\ / / _ \\
+/ /__| (_) | | | | | | |_) | |_| | |_| |\\ V /  __/
+\\____/\\___/|_| |_| |_| .__/ \\__|_|\\__|_| \\_/ \\___|
+ _____               |_|  _
+/__   \\_ __ __ _  ___| | _____ _ __
+  / /\\/ '__/ _\` |/ __| |/ / _ \\ '__|
+ / /  | | | (_| | (__|   <  __/ |
+ \\/   |_|  \\__,_|\\___|_|\\_\\___|_|  \x1b[0m
+\x1b[2m
+  AI-powered competitive intelligence from your terminal.\x1b[0m
+`;
+  console.log(splash);
+}
+
 async function main(): Promise<void> {
-  console.log('\n  Competitive Tracker\n');
+  showSplash();
 
   if (!checkApiKey()) {
-    console.log('  Warning: No API key configured.');
+    console.log('  \x1b[33mWarning:\x1b[0m No API key configured.');
     console.log('  Add ANTHROPIC_API_KEY or OPENAI_API_KEY to your .env file.\n');
   }
 
