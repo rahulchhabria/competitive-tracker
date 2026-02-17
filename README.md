@@ -1,15 +1,15 @@
-# Competitive Tracker
+# Rival
 
-AI-powered competitive intelligence that actually works. Just add a company domain, click a button, and get instant insights.
+AI-powered competitive intelligence from your terminal. Add a company domain, generate a digest, and get actionable insights.
 
 ## What It Does
 
 Track your competitors' blog posts and announcements automatically. AI analyzes everything and tells you what matters.
 
-- **Dead simple**: Add competitor domain → Generate digest → Done
+- **CLI-first**: Interactive menus, no browser needed
 - **Auto-discovery**: Finds RSS feeds and blogs automatically
 - **AI analysis**: Claude analyzes threat levels and strategic implications
-- **One click**: Full pipeline runs from the browser
+- **Full pipeline**: Ingest, analyze, and generate reports in one command
 - **100% local**: Your data stays on your machine
 
 ## Quick Start
@@ -18,7 +18,7 @@ Track your competitors' blog posts and announcements automatically. AI analyzes 
 
 ```bash
 git clone <your-repo>
-cd competitive-tracker
+cd rival
 npm install
 ```
 
@@ -37,16 +37,30 @@ cp .env.example .env
 npm start
 ```
 
-Open http://localhost:3000
+This launches the interactive CLI. You'll see a menu:
+
+```
+? What would you like to do?
+> Status overview
+  Manage competitors
+  Company profile
+  Generate digest (full pipeline)
+  Generate team digests
+  Ingest content only
+  Analyze content only
+  View past digests
+  Exit
+```
 
 ### 4. Use It
 
-1. Click **"+ Add Competitor"**
-2. Enter company name and domain (e.g., "Linear" + "linear.app")
-3. Click **"Generate Digest"**
-4. Watch it work
+1. Select **Manage competitors** > **Add competitor**
+2. Choose **Auto-discover from domain**
+3. Enter company name and domain (e.g. "Linear" + "linear.app")
+4. Select **Generate digest** from the main menu
+5. Pick current week, last week, or a custom date range
 
-That's it. You now have AI-powered competitive intelligence.
+That's it. The tool ingests content, analyzes it with AI, and generates a report.
 
 ## What You Get
 
@@ -58,26 +72,29 @@ For each competitor update, the AI provides:
 - **Product Impact** - Which areas of your product are affected
 - **Recommended Actions** - What you should do about it
 
-All organized in a clean digest report.
+All organized in a markdown digest report.
+
+## CLI Commands
+
+The interactive menu is the primary interface. You can also run individual steps directly:
+
+```bash
+# Interactive CLI (recommended)
+npm start
+
+# Individual pipeline steps
+npm run ingest        # Fetch content from competitor feeds
+npm run analyze       # Run AI analysis on unanalyzed content
+npm run digest        # Generate weekly digest report
+npm run team-digests  # Generate team-specific digests (marketing, sales, product)
+```
 
 ## How It Works
 
-1. **Auto-Discovery**: Enter a domain → tool finds RSS feeds and blog URLs
+1. **Auto-Discovery**: Enter a domain, the tool finds RSS feeds and blog URLs
 2. **Smart Filtering**: Only grabs content from last 6 months
 3. **AI Analysis**: Claude analyzes each article for competitive threats
 4. **Digest Generation**: Combines everything into actionable reports
-
-Everything happens in one click from the browser.
-
-## Features
-
-- ✅ **Web Interface** - No command line needed
-- ✅ **Auto-Discovery** - Finds RSS feeds automatically
-- ✅ **Real-time Progress** - Watch ingestion and analysis live
-- ✅ **AI-Powered** - Claude or GPT analyzes everything
-- ✅ **Threat Assessment** - Automatic categorization
-- ✅ **Local Storage** - All data on your machine
-- ✅ **Recent Content Only** - Last 6 months (no old spam)
 
 ## Configuration
 
@@ -95,6 +112,9 @@ DEFAULT_MODEL=anthropic:claude-sonnet-4-20250514
 # Optional: Analysis settings
 ANALYSIS_TEMPERATURE=0.3
 MAX_TOKENS=4000
+
+# Optional: Where to save digest reports
+DIGEST_OUTPUT_DIR=~/Documents/Competitive Digests
 ```
 
 ### Using OpenAI Instead
@@ -111,42 +131,6 @@ Very affordable for personal or team use:
 - **Claude**: ~$1-2/month for 100 articles (recommended)
 - **GPT-4**: ~$3-5/month for 100 articles
 
-## CLI Tools (Optional)
-
-Prefer command line? You can use:
-
-```bash
-# Add competitors interactively
-npm run manage
-
-# Manual pipeline
-npm run ingest   # Fetch content
-npm run analyze  # Run AI analysis
-npm run digest   # Generate report
-```
-
-But the web UI is easier.
-
-## Troubleshooting
-
-### "No API Key Configured"
-
-- Add your key to `.env`
-- Restart the server
-- Make sure there are no quotes around the key
-
-### "Could not find RSS feeds"
-
-- Try a different competitor
-- Some sites don't have RSS feeds
-- Check the domain is correct (no http://, just the domain)
-
-### Server Won't Start
-
-- Make sure port 3000 is available
-- Run `npm install` to ensure dependencies are installed
-- Check for errors in the terminal
-
 ## Automation
 
 Want weekly digests automatically?
@@ -156,7 +140,7 @@ Want weekly digests automatically?
 crontab -e
 
 # Add this line:
-0 9 * * 1 cd /path/to/competitive-tracker && npm start && sleep 5 && curl -X POST http://localhost:3000/api/run-digest
+0 9 * * 1 cd /path/to/rival && npm run digest -- --last-week --markdown
 ```
 
 ## Data Storage
@@ -165,45 +149,25 @@ Everything stored locally in `data/`:
 
 ```
 data/
-├── content/       # Raw articles
-├── analysis/      # AI analysis results
-└── digests/       # Generated reports
+├── content/       # Raw articles (JSON)
+├── analysis/      # AI analysis results (JSON)
+└── digests/       # Generated reports (JSON + Markdown)
 ```
-
-## Security
-
-- ✅ All data stored locally
-- ✅ API keys in local `.env` file
-- ✅ No external services (except AI APIs)
-- ✅ `.env` automatically git-ignored
 
 ## Architecture
 
 ```
-competitive-tracker/
-├── public/              # Web UI
-│   ├── index.html      # Main interface
-│   ├── style.css       # Styles
-│   └── script.js       # Frontend logic
+rival/
 ├── src/
-│   ├── server/         # Express API
-│   ├── ingestion/      # RSS fetcher (6-month filter)
-│   ├── analysis/       # AI analyzer
-│   ├── digest/         # Report generator
-│   ├── storage/        # File storage
-│   └── utils/          # Auto-discovery & helpers
-└── data/               # Your data (git-ignored)
+│   ├── cli.ts             # Interactive CLI entry point
+│   ├── ingestion/         # RSS fetcher (6-month filter)
+│   ├── analysis/          # AI analyzer (Claude/GPT)
+│   ├── digest/            # Report generator
+│   ├── storage/           # File-based storage
+│   ├── scripts/           # Individual pipeline scripts
+│   └── utils/             # Auto-discovery & helpers
+└── data/                  # Your data (git-ignored)
 ```
-
-## Contributing
-
-Ideas welcome:
-
-- Additional content sources (Twitter, LinkedIn)
-- Email delivery
-- Slack/Discord integration
-- More AI providers
-- Database storage option
 
 ## License
 
@@ -212,12 +176,6 @@ MIT
 ## Built With
 
 - [Vercel AI SDK](https://ai-sdk.dev/) - AI abstraction
-- [Express](https://expressjs.com/) - Web server
 - [RSS Parser](https://github.com/rbren/rss-parser) - Feed parsing
 - [Cheerio](https://cheerio.js.org/) - Web scraping
-
----
-
-**Questions?** Open an issue on GitHub.
-
-**Ready to start?** Run `npm start` and open http://localhost:3000
+- [Prompts](https://github.com/terkelg/prompts) - Interactive CLI

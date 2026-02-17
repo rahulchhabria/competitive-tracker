@@ -301,7 +301,7 @@ async function editCompetitor(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  console.log('\n🏆 Competitive Tracker - Manage Competitors\n');
+  console.log('\n🏆 Rival - Manage Competitors\n');
 
   let running = true;
 

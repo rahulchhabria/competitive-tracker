@@ -129,7 +129,7 @@ Focus on factual information from the website. Be concise and specific.`
 
       const req = client.get(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; CompetitiveTracker/1.0)',
+          'User-Agent': 'Mozilla/5.0 (compatible; Rival/2.0)',
           'Accept': 'text/html,application/xhtml+xml'
         },
         timeout: 10000

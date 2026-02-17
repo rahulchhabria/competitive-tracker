@@ -119,7 +119,7 @@ export class FeedDiscovery {
       const response = await axios.get(url, {
         timeout: 10000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; CompetitiveTracker/1.0)'
+          'User-Agent': 'Mozilla/5.0 (compatible; Rival/2.0)'
         }
       });
       return response.data;
@@ -261,7 +261,7 @@ export class FeedDiscovery {
         const response = await axios.head(url, {
           timeout: 5000,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; CompetitiveTracker/1.0)'
+            'User-Agent': 'Mozilla/5.0 (compatible; Rival/2.0)'
           }
         });
 
@@ -377,7 +377,7 @@ export class FeedDiscovery {
           timeout: 5000,
           maxRedirects: 5,
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; CompetitiveTracker/1.0)'
+            'User-Agent': 'Mozilla/5.0 (compatible; Rival/2.0)'
           }
         });
 

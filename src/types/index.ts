@@ -112,4 +112,5 @@ export interface Config {
   temperature: number;
   maxTokens: number;
   digestFrequency: 'daily' | 'weekly' | 'monthly';
+  digestOutputDir?: string;
 }

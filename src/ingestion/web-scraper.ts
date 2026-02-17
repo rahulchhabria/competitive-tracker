@@ -27,7 +27,7 @@ export class WebScraper {
     try {
       const response = await axios.get(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; CompetitiveTracker/1.0)'
+          'User-Agent': 'Mozilla/5.0 (compatible; Rival/2.0)'
         },
         timeout: 10000
       });

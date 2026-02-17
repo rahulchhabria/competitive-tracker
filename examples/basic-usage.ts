@@ -1,5 +1,5 @@
 /**
- * Basic usage example for the competitive tracker
+ * Basic usage example for Rival
  *
  * This demonstrates the complete workflow:
  * 1. Initialize storage
@@ -17,7 +17,7 @@ import {
 } from '../src/index.js';
 
 async function main() {
-  console.log('🚀 Competitive Tracker - Basic Usage Example\n');
+  console.log('🚀 Rival - Basic Usage Example\n');
 
   // Configure competitors
   const competitors: CompetitorConfig[] = [

@@ -1,15 +1,16 @@
 {
-  "name": "competitive-tracker",
-  "version": "1.0.0",
-  "description": "AI-powered competitive monitoring digest system",
+  "name": "rival",
+  "version": "2.0.0",
+  "description": "AI-powered competitive intelligence CLI tool",
   "main": "dist/index.js",
+  "bin": {
+    "rival": "./dist/cli.js"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "tsx src/server/app.ts",
-    "web": "tsx src/server/app.ts",
-    "dev": "tsx src/index.ts",
-    "manage": "tsx src/scripts/manage-competitors.ts",
+    "start": "tsx src/cli.ts",
+    "ui": "tsx src/cli.ts --ui",
     "ingest": "tsx src/scripts/ingest.ts",
     "analyze": "tsx src/scripts/analyze.ts",
     "digest": "tsx src/scripts/generate-digest.ts",
@@ -19,23 +20,20 @@
     "competitive-intelligence",
     "ai",
     "monitoring",
-    "digest"
+    "digest",
+    "cli"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.0",
     "@ai-sdk/openai": "^1.0.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
     "@types/prompts": "^2.4.9",
     "ai": "^4.0.0",
     "axios": "^1.7.0",
     "cheerio": "^1.0.0",
-    "cors": "^2.8.6",
     "date-fns": "^3.0.0",
     "dotenv": "^16.4.0",
-    "express": "^5.2.1",
     "prompts": "^2.4.2",
     "rss-parser": "^3.13.0",
     "zod": "^3.23.0"

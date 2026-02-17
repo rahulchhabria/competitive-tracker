@@ -1,4 +1,4 @@
-# Competitive Tracker - Project Summary
+# Rival - Project Summary
 
 ## Overview
 
@@ -40,7 +40,7 @@ A complete AI-powered competitive monitoring system built with the Vercel AI SDK
 ## Project Structure
 
 ```
-competitive-tracker/
+rival/
 ├── src/
 │   ├── types/              # TypeScript types & Zod schemas
 │   │   └── index.ts        # Core type definitions
@@ -270,7 +270,7 @@ Customize in `src/types/index.ts`:
 
 **Cron Job:**
 ```bash
-0 9 * * 1 cd /path/to/competitive-tracker && npm run ingest && npm run analyze && npm run digest -- --markdown
+0 9 * * 1 cd /path/to/rival && npm run ingest && npm run analyze && npm run digest -- --markdown
 ```
 
 ## Extensibility
