@@ -20,6 +20,17 @@ export class DigestGenerator {
     const weekStartDate = startOfWeek(referenceDate, { weekStartsOn: 1 }); // Monday
     const weekEndDate = endOfWeek(referenceDate, { weekStartsOn: 1 }); // Sunday
 
+    return this.generateDigestForDateRange(weekStartDate, weekEndDate);
+  }
+
+  async generateCustomDigest(startDate: Date, endDate: Date): Promise<WeeklyDigest> {
+    return this.generateDigestForDateRange(startDate, endDate);
+  }
+
+  private async generateDigestForDateRange(weekStartDate: Date, weekEndDate: Date): Promise<WeeklyDigest> {
+    // Check for cancellation at the start
+    this.cancellationToken?.throwIfCancelled();
+
     console.log(`Generating digest for week: ${weekStartDate.toISOString().split('T')[0]} to ${weekEndDate.toISOString().split('T')[0]}`);
 
     // Load content for the week

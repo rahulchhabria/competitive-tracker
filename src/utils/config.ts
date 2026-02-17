@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 export function loadConfig(): Config {
-  const { competitors, myCompany } = loadCompetitorsFile();
+  const { competitors, myCompany, settings } = loadCompetitorsFile();
   return {
     competitors,
     myCompany,
@@ -12,10 +12,11 @@ export function loadConfig(): Config {
     temperature: parseFloat(process.env.ANALYSIS_TEMPERATURE || '0.3'),
     maxTokens: parseInt(process.env.MAX_TOKENS || '4000'),
     digestFrequency: (process.env.DIGEST_FREQUENCY as any) || 'weekly',
+    digestOutputDir: settings?.digestOutputDir || process.env.DIGEST_OUTPUT_DIR,
   };
 }
 
-function loadCompetitorsFile(): { competitors: CompetitorConfig[]; myCompany?: CompanyProfile } {
+function loadCompetitorsFile(): { competitors: CompetitorConfig[]; myCompany?: CompanyProfile; settings?: { digestOutputDir?: string } } {
   const competitorsPath = join(process.cwd(), 'competitors.json');
   const examplePath = join(process.cwd(), 'competitors.example.json');
 
@@ -34,6 +35,7 @@ function loadCompetitorsFile(): { competitors: CompetitorConfig[]; myCompany?: C
     return {
       competitors: data.competitors || [],
       myCompany: data.myCompany || undefined,
+      settings: data.settings || undefined,
     };
   } catch (error) {
     console.error('Error loading competitors configuration:', error);

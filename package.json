@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc",
     "start": "tsx src/cli.ts",
+    "ui": "tsx src/cli.ts --ui",
     "ingest": "tsx src/scripts/ingest.ts",
     "analyze": "tsx src/scripts/analyze.ts",
     "digest": "tsx src/scripts/generate-digest.ts",

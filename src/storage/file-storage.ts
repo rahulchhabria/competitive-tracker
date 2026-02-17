@@ -203,7 +203,7 @@ export class FileStorage {
   }
 
   // Export digest to markdown
-  async exportDigestToMarkdown(digest: WeeklyDigest): Promise<{ markdown: string; filePath: string }> {
+  async exportDigestToMarkdown(digest: WeeklyDigest, customOutputDir?: string): Promise<{ markdown: string; filePath: string }> {
     const md: string[] = [];
 
     md.push(`# Competitive Intelligence Digest`);
@@ -261,8 +261,8 @@ export class FileStorage {
     const markdown = md.join('\n');
     const dateStr = digest.weekStartDate.toISOString().split('T')[0];
 
-    // Get digest output directory from environment variable or default to exports folder
-    let digestOutputDir = process.env.DIGEST_OUTPUT_DIR;
+    // Get digest output directory from parameter, environment variable, or default to exports folder
+    let digestOutputDir = customOutputDir || process.env.DIGEST_OUTPUT_DIR;
 
     // Expand ~ to home directory
     if (digestOutputDir?.startsWith('~/')) {

@@ -138,9 +138,14 @@ function threatBadge(level: string): string {
 
 const COMPETITORS_FILE = join(process.cwd(), 'competitors.json');
 
+interface Settings {
+  digestOutputDir?: string;
+}
+
 interface CompetitorsData {
   competitors: CompetitorConfig[];
   myCompany?: CompanyProfile;
+  settings?: Settings;
 }
 
 function ensureCompetitorsFile(): void {
@@ -291,7 +296,7 @@ async function addCompetitorAuto(): Promise<void> {
     {
       type: 'text',
       name: 'domain',
-      message: 'Domain (e.g. linear.app)',
+      message: 'Domain',
       validate: (v: string) => v.trim() ? true : 'Domain is required'
     }
   ]);
@@ -362,7 +367,7 @@ async function addCompetitorManual(): Promise<void> {
     {
       type: 'list',
       name: 'feedUrls',
-      message: 'RSS feed URLs (comma-separated)',
+      message: 'RSS feed URLs',
       separator: ',',
       validate: (v: string[]) => {
         if (v.length === 0) return 'At least one feed URL is required';
@@ -418,7 +423,7 @@ async function editCompetitor(): Promise<void> {
     {
       type: 'list',
       name: 'feedUrls',
-      message: 'RSS feed URLs (comma-separated)',
+      message: 'RSS feed URLs',
       initial: comp.feedUrls.join(', '),
       separator: ','
     }
@@ -554,7 +559,7 @@ async function companyProfileMenu(): Promise<void> {
   if (action === 'discover') {
     const answers = await prompts([
       { type: 'text', name: 'name', message: 'Your company name', validate: (v: string) => v.trim() ? true : 'Required' },
-      { type: 'text', name: 'domain', message: 'Your domain (e.g. yourcompany.com)', validate: (v: string) => v.trim() ? true : 'Required' }
+      { type: 'text', name: 'domain', message: 'Your domain', validate: (v: string) => v.trim() ? true : 'Required' }
     ]);
     if (!answers.name) return;
 
@@ -582,9 +587,9 @@ async function companyProfileMenu(): Promise<void> {
     const answers = await prompts([
       { type: 'text', name: 'name', message: 'Company name', initial: data.myCompany?.name || '', validate: (v: string) => v.trim() ? true : 'Required' },
       { type: 'text', name: 'description', message: 'Description', initial: data.myCompany?.description || '' },
-      { type: 'list', name: 'products', message: 'Products (comma-separated)', initial: data.myCompany?.products?.join(', ') || '', separator: ',' },
+      { type: 'list', name: 'products', message: 'Products', initial: data.myCompany?.products?.join(', ') || '', separator: ',' },
       { type: 'text', name: 'targetMarket', message: 'Target market', initial: data.myCompany?.targetMarket || '' },
-      { type: 'list', name: 'differentiators', message: 'Differentiators (comma-separated)', initial: data.myCompany?.differentiators?.join(', ') || '', separator: ',' }
+      { type: 'list', name: 'differentiators', message: 'Differentiators', initial: data.myCompany?.differentiators?.join(', ') || '', separator: ',' }
     ]);
 
     if (!answers.name) return;
@@ -602,6 +607,55 @@ async function companyProfileMenu(): Promise<void> {
     delete data.myCompany;
     saveCompetitors(data);
     success('Profile removed');
+  }
+}
+
+// ─── Settings ───────────────────────────────────────────────────────────────
+
+async function settingsMenu(): Promise<void> {
+  const data = loadCompetitors();
+  const currentDir = data.settings?.digestOutputDir || process.env.DIGEST_OUTPUT_DIR || './exports';
+
+  header('Settings');
+  console.log(label('Digest output', currentDir));
+  footer();
+
+  const { action } = await prompts({
+    type: 'select',
+    name: 'action',
+    message: 'Settings',
+    choices: [
+      { title: 'Change digest output directory', value: 'change-dir' },
+      { title: 'Reset to default', value: 'reset' },
+      { title: 'Back', value: 'back' }
+    ]
+  });
+
+  if (action === 'change-dir') {
+    const { newDir } = await prompts({
+      type: 'text',
+      name: 'newDir',
+      message: 'Digest output directory',
+      initial: currentDir,
+      validate: (v: string) => v.trim() ? true : 'Path is required'
+    });
+
+    if (newDir) {
+      data.settings = data.settings || {};
+      data.settings.digestOutputDir = newDir.trim();
+      saveCompetitors(data);
+      success(`Digest output directory set to ${S.bold}${newDir.trim()}${S.reset}`);
+      note('Digests will be saved to this location');
+    }
+  } else if (action === 'reset') {
+    if (data.settings?.digestOutputDir) {
+      delete data.settings.digestOutputDir;
+      if (Object.keys(data.settings).length === 0) {
+        delete data.settings;
+      }
+      saveCompetitors(data);
+      success('Reset to default (./exports)');
+    }
   }
 }
 
@@ -766,35 +820,23 @@ async function runDigest(): Promise<void> {
 
       await runIngest();
 
-      let allContents = await storage.loadAllContent();
-      const filterStart = new Date(dates.start);
-      const filterEnd = new Date(dates.end);
-      filterEnd.setHours(23, 59, 59, 999);
+      cancellationToken.throwIfCancelled();
 
-      allContents = allContents.filter(c => {
-        const d = new Date(c.publishedAt);
-        return d >= filterStart && d <= filterEnd;
-      });
+      await runAnalyze();
 
-      info(`${allContents.length} articles in date range`);
-
-      const unanalyzed = [];
-      for (const content of allContents) {
-        const has = await storage.analysisExists(content.id);
-        if (!has) unanalyzed.push(content);
-      }
-
-      if (unanalyzed.length > 0) {
-        await runAnalyze();
-      }
+      cancellationToken.throwIfCancelled();
 
       step(3, 3, 'Generate');
       const spinner = new Spinner('Composing digest');
       spinner.start();
 
+      const filterStart = new Date(dates.start);
+      const filterEnd = new Date(dates.end);
+      filterEnd.setHours(23, 59, 59, 999);
+
       const generator = new DigestGenerator(storage, analyzer, cancellationToken);
-      const digest = await generator.generateWeeklyDigest(0);
-      const { filePath } = await storage.exportDigestToMarkdown(digest);
+      const digest = await generator.generateCustomDigest(filterStart, filterEnd);
+      const { filePath } = await storage.exportDigestToMarkdown(digest, config.digestOutputDir);
       spinner.stop('done');
 
       printDigestSummary(digest);
@@ -821,7 +863,7 @@ async function runDigest(): Promise<void> {
 
       const generator = new DigestGenerator(storage, analyzer, cancellationToken);
       const digest = await generator.generateWeeklyDigest(weekChoice);
-      const { filePath } = await storage.exportDigestToMarkdown(digest);
+      const { filePath } = await storage.exportDigestToMarkdown(digest, config.digestOutputDir);
       spinner.stop('done');
 
       printDigestSummary(digest);
@@ -961,11 +1003,12 @@ async function viewDigests(): Promise<void> {
 
 function showSplash(): void {
   console.log(`
-${S.cyan}${S.bold}  ____  _            _
- |  _ \\(_)_   ____ _| |
- | |_) | \\ \\ / / _\` | |
- |  _ <| |\\ V / (_| | |
- |_| \\_\\_| \\_/ \\__,_|_|${S.reset}  ${S.dim}v2.0.0${S.reset}
+${S.cyan}${S.bold}  ██████╗ ██╗██╗   ██╗ █████╗ ██╗
+  ██╔══██╗██║██║   ██║██╔══██╗██║
+  ██████╔╝██║██║   ██║███████║██║
+  ██╔══██╗██║╚██╗ ██╔╝██╔══██║██║
+  ██║  ██║██║ ╚████╔╝ ██║  ██║███████╗
+  ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚═╝  ╚═╝╚══════╝${S.reset}  ${S.dim}v2.0.0${S.reset}
 `);
 }
 
@@ -1019,6 +1062,7 @@ async function main(): Promise<void> {
         { title: 'View past digests', description: 'Read generated reports', value: 'view' },
         { title: 'Competitors', description: 'Add, edit, or remove competitors', value: 'competitors' },
         { title: 'Company profile', description: 'Set your company context', value: 'profile' },
+        { title: 'Settings', description: 'Configure digest output and preferences', value: 'settings' },
         { title: 'Team digests', description: 'Marketing, sales, product reports', value: 'team-digests' },
         { title: `${S.dim}Ingest only${S.reset}`, description: 'Fetch content without analyzing', value: 'ingest' },
         { title: `${S.dim}Analyze only${S.reset}`, description: 'Analyze without generating digest', value: 'analyze' },
@@ -1030,6 +1074,7 @@ async function main(): Promise<void> {
       case 'status': await showStatus(); break;
       case 'competitors': await competitorsMenu(); break;
       case 'profile': await companyProfileMenu(); break;
+      case 'settings': await settingsMenu(); break;
       case 'digest': await runDigest(); break;
       case 'team-digests': await runTeamDigests(); break;
       case 'ingest':
