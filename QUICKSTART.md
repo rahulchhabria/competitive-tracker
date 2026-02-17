@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get your competitive monitoring digest up and running in 5 minutes.
+Get your competitive intelligence digest up and running in 5 minutes.
 
 ## Prerequisites
 

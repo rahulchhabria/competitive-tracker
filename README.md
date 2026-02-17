@@ -1,4 +1,4 @@
-# Competitive Tracker
+# Rival
 
 AI-powered competitive intelligence from your terminal. Add a company domain, generate a digest, and get actionable insights.
 
@@ -18,7 +18,7 @@ Track your competitors' blog posts and announcements automatically. AI analyzes 
 
 ```bash
 git clone <your-repo>
-cd competitive-tracker
+cd rival
 npm install
 ```
 
@@ -140,7 +140,7 @@ Want weekly digests automatically?
 crontab -e
 
 # Add this line:
-0 9 * * 1 cd /path/to/competitive-tracker && npm run digest -- --last-week --markdown
+0 9 * * 1 cd /path/to/rival && npm run digest -- --last-week --markdown
 ```
 
 ## Data Storage
@@ -157,7 +157,7 @@ data/
 ## Architecture
 
 ```
-competitive-tracker/
+rival/
 ├── src/
 │   ├── cli.ts             # Interactive CLI entry point
 │   ├── ingestion/         # RSS fetcher (6-month filter)

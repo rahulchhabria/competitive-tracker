@@ -1,4 +1,4 @@
-// Main exports for the competitive tracker library
+// Main exports for the Rival library
 
 export { RSSFetcher } from './ingestion/rss-fetcher.js';
 export { WebScraper } from './ingestion/web-scraper.js';
