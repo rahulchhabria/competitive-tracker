@@ -16,6 +16,8 @@ import { FeedDiscovery } from './utils/feed-discovery.js';
 import { CompanyDiscovery } from './utils/company-discovery.js';
 import { deduplicateByUrl } from './utils/helpers.js';
 import { CancellationToken, setupSignalHandlers, CancellationError } from './utils/cancellation.js';
+import { exec } from 'child_process';
+import { startServer } from './web/server.js';
 
 // ─── Styling ────────────────────────────────────────────────────────────────
 
@@ -967,7 +969,35 @@ ${S.cyan}${S.bold}  ____  _            _
 `);
 }
 
+function openBrowser(url: string): void {
+  const cmd = process.platform === 'darwin' ? 'open'
+    : process.platform === 'win32' ? 'start'
+    : 'xdg-open';
+  exec(`${cmd} ${url}`);
+}
+
+async function launchUI(): Promise<void> {
+  const port = parseInt(process.env.PORT || '3000', 10);
+
+  showSplash();
+  header('Web Dashboard');
+  info(`Starting server on port ${S.bold}${port}${S.reset}`);
+  success(`${S.bold}http://localhost:${port}${S.reset}`);
+  console.log(S.bar);
+  note('Press Ctrl+C to stop');
+  footer();
+
+  openBrowser(`http://localhost:${port}`);
+  await startServer(port);
+}
+
 async function main(): Promise<void> {
+  // Handle --ui flag
+  const args = process.argv.slice(2);
+  if (args.includes('--ui') || args.includes('-ui')) {
+    return launchUI();
+  }
+
   showSplash();
 
   const api = checkApiKey();
